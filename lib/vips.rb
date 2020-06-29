@@ -23,14 +23,26 @@ require 'logger'
 # windows:
 #   The ABI number must be included, but with a hyphen. ffi does not add a
 #   "lib" prefix or a ".dll" suffix.
+#
+# Some rubies such as JRuby don't always look in the same system directories
+# as MRI for a dynamic library, so the environment variable RUBY_VIPS_DYNLIB_PATH
+# can be used to overload where the libraries will be loaded from, this is
+# especially useful on Mac OS X where Homebrew and MacPorts symlink libraries
+# into different directories such as /opt/local/lib and /usr/local/lib.
 def library_name(name, abi_number)
+  name = "#{name}.so.#{abi_number}"
+
   if FFI::Platform.windows?
-    "lib#{name}-#{abi_number}.dll"
+    name = "lib#{name}-#{abi_number}.dll"
   elsif FFI::Platform.mac?
-    "#{name}.#{abi_number}"
-  else
-    "#{name}.so.#{abi_number}"
+    name = "#{name}.#{abi_number}"
   end
+
+  if ENV['RUBY_VIPS_DYNLIB_PATH']
+    name = File.join(ENV['RUBY_VIPS_DYNLIB_PATH'], name)
+  end
+
+  name
 end
 
 module GLib
